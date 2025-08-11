@@ -62,6 +62,9 @@ public:
   double angle(const Vector3D &other) const;
   Vector3D projectOnto(const Vector3D &other) const;
 
+  // Validation
+  bool isZero() const;
+
   // ostream
   friend std::ostream &operator<<(std::ostream &os, const Vector3D &v);
 };

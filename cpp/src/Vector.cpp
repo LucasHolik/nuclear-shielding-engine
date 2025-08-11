@@ -119,6 +119,9 @@ Vector3D Vector3D::projectOnto(const Vector3D &other) const
   return (denom == 0.0) ? Vector3D::ZERO : other * (dot(other) / denom);
 }
 
+// Validation
+bool Vector3D::isZero() const { return magnitude() == 0; }
+
 // ostream (friend)
 std::ostream &operator<<(std::ostream &os, const Vector3D &v)
 {
