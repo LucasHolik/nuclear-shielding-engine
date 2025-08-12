@@ -2,4 +2,4 @@
 .clang-format
 
 # vscode
-.vscode
+.vscode/
