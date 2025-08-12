@@ -10,14 +10,44 @@
 #include <string>
 #include <vector>
 
-DataProcessor::DataProcessor(ParticleConstants::ParticleType particle_type,
-                             ElementConversion::Element element)
-{}
+DataProcessor &DataProcessor::getInstance()
+{
+  static DataProcessor instance;
+
+  return instance;
+}
+
+DataProcessor &
+DataProcessor::getInstance(ParticleConstants::ParticleType particle_type,
+                           ElementConversion::Element element)
+{
+  DataProcessor &instance{getInstance()};
+  instance.addDataSingleFile(particle_type, element);
+
+  return instance;
+}
+
+DataProcessor &DataProcessor::getInstance(
+    const std::vector<
+        std::pair<ParticleConstants::ParticleType, ElementConversion::Element>>
+        &particle_element_pairs)
+{
+  DataProcessor &instance{getInstance()};
+  instance.addDataMultipleFiles(particle_element_pairs);
+
+  return instance;
+}
 
 void DataProcessor::getDataFromFile(
     std::string &filepath, ParticleConstants::ParticleType particle_type,
     ElementConversion::Element element)
 {
+  // Cancel if particle and element pair is already in the database
+  if(inDatabase(particle_type, element))
+  {
+    return;
+  }
+
   // Get number of columns in file based off particle type
   auto no_of_columns{FileConstants::ParticleFileColumnNumber.at(particle_type)};
 
@@ -36,6 +66,8 @@ void DataProcessor::getDataFromFile(
 
     throw std::invalid_argument("Invalid ParticleType");
   }
+
+  std::cout << "Opening filepath: " << filepath << "\n";
 
   std::ifstream file(filepath);
 
@@ -68,6 +100,7 @@ void DataProcessor::getDataFromFile(
 
   // Add to the data map
   data[particle_type][element] = cross_sections;
+  number_data_elements += 1;
 }
 
 std::vector<std::string> DataProcessor::manualSplit(const std::string &string,
@@ -152,4 +185,40 @@ DataProcessor::processFilePath(ParticleConstants::ParticleType particle_type,
                        element_str + ".txt"};
 
   return filepath;
+}
+
+bool DataProcessor::inDatabase(ParticleConstants::ParticleType particle_type,
+                               ElementConversion::Element element)
+{
+  if(data[particle_type].find(element) !=
+     data[particle_type].end()) // If an element for a given particletype is
+                                // already in the database then return true
+  {
+    return true;
+  }
+
+  return false;
+}
+
+void DataProcessor::addDataSingleFile(
+    ParticleConstants::ParticleType particle_type,
+    ElementConversion::Element element)
+{
+  std::string filepath{processFilePath(particle_type, element)};
+
+  getDataFromFile(filepath, particle_type, element);
+}
+
+void DataProcessor::addDataMultipleFiles(
+    const std::vector<
+        std::pair<ParticleConstants::ParticleType, ElementConversion::Element>>
+        &particle_element_pairs)
+{
+  for(const auto &p_e_pair : particle_element_pairs)
+  {
+    auto particle_type{p_e_pair.first};
+    auto element{p_e_pair.second};
+
+    addDataSingleFile(particle_type, element);
+  }
 }

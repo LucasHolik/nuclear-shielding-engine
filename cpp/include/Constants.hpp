@@ -51,11 +51,11 @@ inline const char Delimiter{' '};
 
 inline std::unordered_map<ParticleConstants::ParticleType, std::string>
     ParticleToFilePath{
-        {ParticleConstants::ParticleType::GAMMA, "../../data/photon/"}};
+        {ParticleConstants::ParticleType::GAMMA, "data/photon/"}};
 
 inline std::unordered_map<std::string, ParticleConstants::ParticleType>
     FilePathToParticle{
-        {"../../data/photon/", ParticleConstants::ParticleType::GAMMA}};
+        {"data/photon/", ParticleConstants::ParticleType::GAMMA}};
 
 inline std::unordered_map<ParticleConstants::ParticleType, int>
     ParticleFileColumnNumber{{ParticleConstants::ParticleType::GAMMA, 8}};

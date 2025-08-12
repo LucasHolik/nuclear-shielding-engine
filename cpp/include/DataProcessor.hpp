@@ -1,4 +1,5 @@
 // Processes cross section data from the data folder
+// Singleton design pattern
 
 #pragma once
 
@@ -20,6 +21,11 @@ class DataProcessor
 private:
   XsData data;
 
+  int number_data_elements;
+
+  // Empty Constructor
+  DataProcessor() : number_data_elements{0} {}
+
   void getDataFromFile(
       std::string &filepath, ParticleConstants::ParticleType particle_type,
       ElementConversion::Element element); // Stores filedata in data
@@ -30,15 +36,39 @@ private:
   std::vector<double> stringVecToDoubleVecScientificNotation(
       const std::vector<std::string> &string_vec);
 
-public:
-  // Empty Constructor
-  DataProcessor() {};
-  // Constructor with a particle and element
-  DataProcessor(ParticleConstants::ParticleType particle_type,
-                ElementConversion::Element element);
-  // Getters
-  XsData getData() const { return data; }
   std::string processFilePath(ParticleConstants::ParticleType particle_type,
                               ElementConversion::Element element);
-  //
+
+  bool inDatabase(ParticleConstants::ParticleType particle_type,
+                  ElementConversion::Element element);
+
+public:
+  // Singleton access
+  static DataProcessor &getInstance();
+  static DataProcessor &
+  getInstance(ParticleConstants::ParticleType particle_type,
+              ElementConversion::Element element);
+  static DataProcessor &
+  getInstance(const std::vector<std::pair<ParticleConstants::ParticleType,
+                                          ElementConversion::Element>>
+                  &particle_element_pairs);
+
+  // Getters
+  const XsData &getAllData() const { return data; }
+  int get_number_data_elements() const { return number_data_elements; }
+  const std::vector<std::vector<double>> &
+  getData(ParticleConstants::ParticleType particle_type,
+          ElementConversion::Element element)
+  {
+    return data.at(particle_type).at(element); // Throws if not found
+  }
+
+  // Add data
+  void addDataSingleFile(ParticleConstants::ParticleType particle_type,
+                         ElementConversion::Element element);
+
+  void addDataMultipleFiles(
+      const std::vector<std::pair<ParticleConstants::ParticleType,
+                                  ElementConversion::Element>>
+          &particle_element_pairs);
 };
