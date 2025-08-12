@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <map>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace ParticleConstants
 {
@@ -19,29 +19,33 @@ enum class ParticleType
 };
 
 // Map ParticleType to name
-inline const std::map<ParticleType, std::string> ParticleTypeToName{
+inline const std::unordered_map<ParticleType, std::string> ParticleTypeToName{
     {ParticleType::GAMMA, "gamma"},
     {ParticleType::NEUTRON, "neutron"},
     {ParticleType::PROTON, "proton"}};
 
 // Map ParticleType to mass in MeV
-inline const std::map<ParticleType, double> ParticleTypeToMass{
+inline const std::unordered_map<ParticleType, double> ParticleTypeToMass{
     {ParticleType::GAMMA, 0},
     {ParticleType::NEUTRON, 939.56542194},
     {ParticleType::PROTON, 938.27208816}};
 
 enum class ReactionType
 {
-  RAYLEIGH_SCATTER = 0,
-  COMPTON_SCATTER = 1,
-  PHOTOELECTRIC = 2,
-  PAIR_PRODUCTION = 3
+  COHERENT_SCATTERING = 1,
+  INCOHERENT_SCATTERING = 2,
+  PHOTOELECTRIC_ABSORPTION = 3,
+  NUCLEAR_PAIR_PRODUCTION = 4,
+  ELECTRON_PAIR_PRODUCTION = 5,
+  TOTAL_WITH_COHERENT = 6,
+  TOTAL_WITHOUT_COHERENT = 7
 };
 
-inline std::unordered_map<ParticleType, ReactionType> AllowedReactions{
-    {ParticleType::GAMMA, ReactionType::RAYLEIGH_SCATTER},
-    {ParticleType::GAMMA, ReactionType::COMPTON_SCATTER},
-    {ParticleType::GAMMA, ReactionType::PHOTOELECTRIC}};
+inline const std::unordered_map<ParticleType, std::unordered_set<ReactionType>>
+    AllowedReactions{{ParticleType::GAMMA,
+                      {ReactionType::COHERENT_SCATTERING,
+                       ReactionType::INCOHERENT_SCATTERING,
+                       ReactionType::PHOTOELECTRIC_ABSORPTION}}};
 
 } // namespace ParticleConstants
 
@@ -49,20 +53,34 @@ namespace FileConstants
 {
 inline const char Delimiter{' '};
 
-inline std::unordered_map<ParticleConstants::ParticleType, std::string>
+inline const int EnergyColumn{0};
+
+inline const std::unordered_map<ParticleConstants::ParticleType, std::string>
     ParticleToFilePath{
         {ParticleConstants::ParticleType::GAMMA, "data/photon/"}};
 
-inline std::unordered_map<std::string, ParticleConstants::ParticleType>
+inline const std::unordered_map<std::string, ParticleConstants::ParticleType>
     FilePathToParticle{
         {"data/photon/", ParticleConstants::ParticleType::GAMMA}};
 
-inline std::unordered_map<ParticleConstants::ParticleType, int>
+inline const std::unordered_map<ParticleConstants::ParticleType, int>
     ParticleFileColumnNumber{{ParticleConstants::ParticleType::GAMMA, 8}};
 
-inline std::unordered_map<ParticleConstants::ParticleType, int>
+inline const std::unordered_map<ParticleConstants::ParticleType, int>
     ParticleToDataStartLine{{ParticleConstants::ParticleType::GAMMA, 4}};
 
+inline const std::unordered_map<
+    ParticleConstants::ParticleType,
+    std::unordered_map<ParticleConstants::ReactionType, size_t>>
+    ReactionToColumn{
+        {ParticleConstants::ParticleType::GAMMA,
+         {{ParticleConstants::ReactionType::COHERENT_SCATTERING, 1},
+          {ParticleConstants::ReactionType::INCOHERENT_SCATTERING, 2},
+          {ParticleConstants::ReactionType::PHOTOELECTRIC_ABSORPTION, 3},
+          {ParticleConstants::ReactionType::NUCLEAR_PAIR_PRODUCTION, 4},
+          {ParticleConstants::ReactionType::ELECTRON_PAIR_PRODUCTION, 5},
+          {ParticleConstants::ReactionType::TOTAL_WITH_COHERENT, 6},
+          {ParticleConstants::ReactionType::TOTAL_WITHOUT_COHERENT, 7}}}};
 } // namespace FileConstants
 
 namespace ElementConversion

@@ -42,6 +42,19 @@ private:
   bool inDatabase(ParticleConstants::ParticleType particle_type,
                   ElementConversion::Element element);
 
+  // Log-log interpolatation between b1 and b2 based off how far value is
+  // between a1 and a2, accounts for value = a1 or value = a2 so no need for
+  // checking exactly equal overhead in getAttenCoef
+  double interpolateBetween(double value, double a1, double a2, double b1,
+                            double b2) const;
+
+  bool isAllowedReaction(ParticleConstants::ParticleType particle_type,
+                         ParticleConstants::ReactionType reaction);
+
+  const std::pair<size_t, size_t>
+  getAboveBelowIndices(double value, std::vector<double> values)
+      const; // Returns std::pair(upper_index, lower_index)
+
 public:
   // Singleton access
   static DataProcessor &getInstance();
@@ -62,6 +75,9 @@ public:
   {
     return data.at(particle_type).at(element); // Throws if not found
   }
+  double getAttenCoef(double energy, ParticleConstants::ReactionType reaction,
+                      ParticleConstants::ParticleType particle_type,
+                      ElementConversion::Element element);
 
   // Add data
   void addDataSingleFile(ParticleConstants::ParticleType particle_type,

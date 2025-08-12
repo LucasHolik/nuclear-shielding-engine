@@ -6,36 +6,20 @@
 int main()
 {
 
-  DataProcessor dp{DataProcessor::getInstance()};
+  DataProcessor dp{DataProcessor::getInstance(
+      ParticleConstants::ParticleType::GAMMA, ElementConversion::Element::Sn)};
 
-  dp.addDataSingleFile(ParticleConstants::ParticleType::GAMMA,
-                       ElementConversion::Element::C);
+  std::cout << "Enter photon energy (MeV): \n";
 
-  std::vector<
-      std::pair<ParticleConstants::ParticleType, ElementConversion::Element>>
-      particle_element_list;
+  double energy;
 
-  particle_element_list.push_back(std::make_pair(
-      ParticleConstants::ParticleType::GAMMA, ElementConversion::Element::Ac));
-  particle_element_list.push_back(std::make_pair(
-      ParticleConstants::ParticleType::GAMMA, ElementConversion::Element::P));
-  particle_element_list.push_back(std::make_pair(
-      ParticleConstants::ParticleType::GAMMA, ElementConversion::Element::C));
+  std::cin >> energy;
 
-  dp.addDataMultipleFiles(particle_element_list);
+  double attencoef{dp.getAttenCoef(
+      energy, ParticleConstants::ReactionType::PHOTOELECTRIC_ABSORPTION,
+      ParticleConstants::ParticleType::GAMMA, ElementConversion::Element::Sn)};
 
-  std::cout << dp.get_number_data_elements() << "\n";
-
-  auto data{dp.getData(ParticleConstants::ParticleType::GAMMA,
-                       ElementConversion::Element::C)};
-
-  for(auto &vec : data)
-  {
-    for(double num : vec)
-    {
-      std::cout << num << "\n";
-    }
-  }
+  std::cout << attencoef << "\n";
 
   return 0;
 }

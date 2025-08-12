@@ -3,6 +3,8 @@
 #include "DataProcessor.hpp"
 #include "constants.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -66,8 +68,6 @@ void DataProcessor::getDataFromFile(
 
     throw std::invalid_argument("Invalid ParticleType");
   }
-
-  std::cout << "Opening filepath: " << filepath << "\n";
 
   std::ifstream file(filepath);
 
@@ -198,6 +198,156 @@ bool DataProcessor::inDatabase(ParticleConstants::ParticleType particle_type,
   }
 
   return false;
+}
+
+double DataProcessor::interpolateBetween(double value, double a1, double a2,
+                                         double b1, double b2) const
+{
+  if(!(value >= a1 && value <= a2))
+  {
+    throw std::runtime_error("value must be between a1 and a2 (inclusively)");
+  }
+
+  // Transform to log space
+  double log_value{std::log(value)};
+  double log_a1{std::log(a1)};
+  double log_a2{std::log(a2)};
+  double log_b1{std::log(b1)};
+  double log_b2{std::log(b2)};
+
+  double proportion{(log_value - log_a1) / (log_a2 - log_a1)};
+  double log_result{log_b1 + (log_b2 - log_b1) * proportion};
+
+  // Transform back
+  double result{std::exp(log_result)};
+
+  return result;
+}
+
+bool DataProcessor::isAllowedReaction(
+    ParticleConstants::ParticleType particle_type,
+    ParticleConstants::ReactionType reaction)
+{
+  auto particle_it{ParticleConstants::AllowedReactions.find(particle_type)};
+
+  if(particle_it != ParticleConstants::AllowedReactions.end())
+  {
+    // If in here then there are allowed reactions for the specified particle
+    if(particle_it->second.find(reaction) != particle_it->second.end())
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const std::pair<size_t, size_t>
+DataProcessor::getAboveBelowIndices(double value,
+                                    std::vector<double> values) const
+{
+  // lower_bound gives first element >= target
+  auto it{std::lower_bound(values.begin(), values.end(), value)};
+
+  // If energy is too low
+  if(it == values.begin())
+  {
+    // Check for lower bound
+    if(value == values[0])
+    {
+      return std::make_pair(0, 0);
+    }
+    throw std::runtime_error("Value below range");
+  }
+  if(it == values.end())
+  {
+    throw std::runtime_error("Value above range");
+  }
+
+  size_t upper_index{static_cast<size_t>(std::distance(values.begin(), it))};
+
+  size_t max_index{values.size() - 1};
+
+  // Edge case: if at a k-edge then value == values[upper_index] ==
+  // values[upper_index + 1]
+  // First check that we're not at the end
+  if(upper_index < max_index)
+  {
+    // Check for k-edge
+    if(value == values[upper_index + 1])
+    {
+      // At k-edge so return both of the larger indices
+      upper_index += 1;
+
+      return std::make_pair(upper_index, upper_index);
+    }
+  }
+
+  // Also check if value exactly matches
+  if(value == values[upper_index])
+  {
+    return std::make_pair(upper_index, upper_index);
+  }
+
+  size_t lower_index{upper_index - 1};
+
+  return std::make_pair(upper_index, lower_index);
+}
+
+double
+DataProcessor::getAttenCoef(double energy,
+                            ParticleConstants::ReactionType reaction,
+                            ParticleConstants::ParticleType particle_type,
+                            ElementConversion::Element element)
+{
+  // Files are formatted with energy going low to high and when there are
+  // k-edges the photon energy will be duplicated with lower mass attenuation
+  // coefs above, hence just have to search for the energy values closest to the
+  // energy we're searching and verify that their indices are +-1 of each other.
+
+  // Check that the reaction is allowed
+  if(!isAllowedReaction(particle_type, reaction))
+  {
+    throw std::runtime_error("Invalid reaction: Particle enum " +
+                             std::to_string(static_cast<int>(particle_type)) +
+                             ", Reaction enum " +
+                             std::to_string(static_cast<int>(reaction)));
+  }
+
+  const std::vector<std::vector<double>> &data_{
+      data.at(particle_type).at(element)}; // Throws if not found
+
+  size_t reaction_column{FileConstants::ReactionToColumn.at(particle_type)
+                             .at(reaction)}; // Throws if not found
+
+  std::vector<double> energies;
+
+  for(const std::vector<double> &line : data_)
+  {
+    energies.push_back(line[FileConstants::EnergyColumn]);
+  }
+
+  std::pair<size_t, size_t> above_below_indices{
+      getAboveBelowIndices(energy, energies)};
+
+  size_t index1{above_below_indices.second};
+  size_t index2{above_below_indices.first};
+
+  // Edge case
+  if(index1 == index2)
+  {
+    return data_[index1][reaction_column];
+  }
+
+  double energy1{energies[index1]};
+  double energy2{energies[index2]};
+  double mass_atten_coef1{data_[index1][reaction_column]};
+  double mass_atten_coef2{data_[index2][reaction_column]};
+
+  double interpolated_mass_atten_coef{interpolateBetween(
+      energy, energy1, energy2, mass_atten_coef1, mass_atten_coef2)};
+
+  return interpolated_mass_atten_coef;
 }
 
 void DataProcessor::addDataSingleFile(
