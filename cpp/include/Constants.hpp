@@ -32,13 +32,13 @@ inline const std::unordered_map<ParticleType, double> ParticleTypeToMass{
 
 enum class ReactionType
 {
-  COHERENT_SCATTERING = 1,
-  INCOHERENT_SCATTERING = 2,
-  PHOTOELECTRIC_ABSORPTION = 3,
-  NUCLEAR_PAIR_PRODUCTION = 4,
-  ELECTRON_PAIR_PRODUCTION = 5,
-  TOTAL_WITH_COHERENT = 6,
-  TOTAL_WITHOUT_COHERENT = 7
+  COHERENT_SCATTERING = 0,
+  INCOHERENT_SCATTERING = 1,
+  PHOTOELECTRIC_ABSORPTION = 2,
+  NUCLEAR_PAIR_PRODUCTION = 3,
+  ELECTRON_PAIR_PRODUCTION = 4,
+  TOTAL_WITH_COHERENT = 5,
+  TOTAL_WITHOUT_COHERENT = 6
 };
 
 inline const std::unordered_map<ParticleType, std::unordered_set<ReactionType>>

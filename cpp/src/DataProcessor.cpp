@@ -203,9 +203,9 @@ bool DataProcessor::inDatabase(ParticleConstants::ParticleType particle_type,
 double DataProcessor::interpolateBetween(double value, double a1, double a2,
                                          double b1, double b2) const
 {
-  if(!(value >= a1 && value <= a2))
+  if(!(value > a1 && value < a2))
   {
-    throw std::runtime_error("value must be between a1 and a2 (inclusively)");
+    throw std::runtime_error("value must be between a1 and a2 (exclusively)");
   }
 
   // Transform to log space
@@ -224,9 +224,8 @@ double DataProcessor::interpolateBetween(double value, double a1, double a2,
   return result;
 }
 
-bool DataProcessor::isAllowedReaction(
-    ParticleConstants::ParticleType particle_type,
-    ParticleConstants::ReactionType reaction)
+void DataProcessor::checkReaction(ParticleConstants::ParticleType particle_type,
+                                  ParticleConstants::ReactionType reaction)
 {
   auto particle_it{ParticleConstants::AllowedReactions.find(particle_type)};
 
@@ -235,11 +234,15 @@ bool DataProcessor::isAllowedReaction(
     // If in here then there are allowed reactions for the specified particle
     if(particle_it->second.find(reaction) != particle_it->second.end())
     {
-      return true;
+      return;
     }
   }
 
-  return false;
+  // Reaction not allowed
+  throw std::runtime_error("Invalid reaction: Particle enum " +
+                           std::to_string(static_cast<int>(particle_type)) +
+                           ", Reaction enum " +
+                           std::to_string(static_cast<int>(reaction)));
 }
 
 const std::pair<size_t, size_t>
@@ -294,7 +297,7 @@ DataProcessor::getAboveBelowIndices(double value,
   return std::make_pair(upper_index, lower_index);
 }
 
-double
+const double
 DataProcessor::getAttenCoef(double energy,
                             ParticleConstants::ReactionType reaction,
                             ParticleConstants::ParticleType particle_type,
@@ -305,14 +308,8 @@ DataProcessor::getAttenCoef(double energy,
   // coefs above, hence just have to search for the energy values closest to the
   // energy we're searching and verify that their indices are +-1 of each other.
 
-  // Check that the reaction is allowed
-  if(!isAllowedReaction(particle_type, reaction))
-  {
-    throw std::runtime_error("Invalid reaction: Particle enum " +
-                             std::to_string(static_cast<int>(particle_type)) +
-                             ", Reaction enum " +
-                             std::to_string(static_cast<int>(reaction)));
-  }
+  // Check that the reaction is allowed, throws if not allowed
+  checkReaction(particle_type, reaction);
 
   const std::vector<std::vector<double>> &data_{
       data.at(particle_type).at(element)}; // Throws if not found
@@ -348,6 +345,39 @@ DataProcessor::getAttenCoef(double energy,
       energy, energy1, energy2, mass_atten_coef1, mass_atten_coef2)};
 
   return interpolated_mass_atten_coef;
+}
+
+const std::vector<double>
+DataProcessor::getAllAttenCoefs(double energy,
+
+                                ParticleConstants::ParticleType particle_type,
+                                ElementConversion::Element element)
+{
+  // Get all allowed reactions
+  const auto &allowed_reactions{
+      ParticleConstants::AllowedReactions.at(particle_type)};
+
+  // Place the coefs in a vector with positions equal to their enums for easy
+  // access in other classes
+  int max_reaction_enum{0};
+
+  for(const auto &reaction : allowed_reactions)
+  {
+    max_reaction_enum = std::max(max_reaction_enum, static_cast<int>(reaction));
+  }
+
+  // Initialise all_coefs vector with zeros
+  // Enums start at zero so need the +1
+  std::vector<double> all_coefs(max_reaction_enum + 1, 0.0);
+
+  // Get interpolated coef for each reaction
+  for(const auto &reaction : allowed_reactions)
+  {
+    double coef{getAttenCoef(energy, reaction, particle_type, element)};
+    all_coefs[static_cast<int>(reaction)] = coef; // Set at enum position
+  }
+
+  return all_coefs;
 }
 
 void DataProcessor::addDataSingleFile(

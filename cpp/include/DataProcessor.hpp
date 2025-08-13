@@ -7,6 +7,7 @@
 
 #include <array>
 #include <map>
+#include <span>
 #include <vector>
 
 // Cached data stored in a map linking each particle to an element and its cross
@@ -43,13 +44,12 @@ private:
                   ElementConversion::Element element);
 
   // Log-log interpolatation between b1 and b2 based off how far value is
-  // between a1 and a2, accounts for value = a1 or value = a2 so no need for
-  // checking exactly equal overhead in getAttenCoef
+  // between a1 and a2
   double interpolateBetween(double value, double a1, double a2, double b1,
                             double b2) const;
 
-  bool isAllowedReaction(ParticleConstants::ParticleType particle_type,
-                         ParticleConstants::ReactionType reaction);
+  void checkReaction(ParticleConstants::ParticleType particle_type,
+                     ParticleConstants::ReactionType reaction);
 
   const std::pair<size_t, size_t>
   getAboveBelowIndices(double value, std::vector<double> values)
@@ -75,9 +75,13 @@ public:
   {
     return data.at(particle_type).at(element); // Throws if not found
   }
-  double getAttenCoef(double energy, ParticleConstants::ReactionType reaction,
-                      ParticleConstants::ParticleType particle_type,
-                      ElementConversion::Element element);
+  const double getAttenCoef(double energy,
+                            ParticleConstants::ReactionType reaction,
+                            ParticleConstants::ParticleType particle_type,
+                            ElementConversion::Element element);
+  const std::vector<double>
+  getAllAttenCoefs(double energy, ParticleConstants::ParticleType particle_type,
+                   ElementConversion::Element element);
 
   // Add data
   void addDataSingleFile(ParticleConstants::ParticleType particle_type,

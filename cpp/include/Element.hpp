@@ -12,7 +12,7 @@ class Element
 private:
   double atomic_mass; // amu
   int atomic_number;
-  std::vector<std::vector<double>> cross_section_data;
+  std::vector<std::vector<double>> mass_atten_coefs;
   double density; // g / cm^3 at RTP
   int no_of_cross_section_values;
   ElementConversion::Element type;
@@ -29,7 +29,7 @@ public:
   int get_atomic_number() const { return atomic_number; }
   std::vector<std::vector<double>> get_cross_section_data() const
   {
-    return cross_section_data;
+    return mass_atten_coefs;
   }
   double get_density() const { return density; }
   int get_no_of_cross_section_values() const
